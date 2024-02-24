@@ -2,6 +2,7 @@
 
 use std::io::IsTerminal;
 
+use cfg_if::cfg_if;
 use time::UtcOffset;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{fmt::time::OffsetTime, EnvFilter, FmtSubscriber};
@@ -26,7 +27,7 @@ pub fn init_with_config(bin_name: &str, config: &LogConfig) {
     // NOTE: ansi is enabled by default.
     // Could be disabled by `NO_COLOR` environment variable.
     // https://no-color.org/
-    if !std::io::stdout().is_terminal() {
+    if force_no_color() {
         builder = builder.with_ansi(false);
     }
 
@@ -78,5 +79,15 @@ pub fn init_with_config(bin_name: &str, config: &LogConfig) {
         builder.without_time().init();
     } else {
         builder.init();
+    }
+}
+
+fn force_no_color() -> bool {
+    cfg_if! {
+        if #[cfg(target_os = "ios")] {
+            true
+        } else {
+            !std::io::stdout().is_terminal()
+        }
     }
 }
